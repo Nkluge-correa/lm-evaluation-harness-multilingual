@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument("--model_args", default="")
     parser.add_argument("--tasks", default='arc_vi,mmlu_vi,hellaswag_vi,truthfulqa_vi')
     parser.add_argument("--provide_description", action="store_true")
-    # parser.add_argument("--num_fewshot", type=int, default=0)
+    parser.add_argument("--num_fewshot", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--device", type=str, default='cuda')
     parser.add_argument("--output_path", default=None)
@@ -120,6 +120,7 @@ def main():
         check_integrity=args.check_integrity,
         write_out=args.write_out,
         output_base_path=args.output_base_path,
+        num_fewshot=args.num_fewshot,
     )
 
     dumped = json.dumps(results, indent=2)
