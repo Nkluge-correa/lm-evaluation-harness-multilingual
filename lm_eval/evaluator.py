@@ -24,6 +24,7 @@ def open_llm_evaluate(
     decontamination_ngrams_path=None,
     write_out=False,
     output_base_path=None,
+    num_fewshot=None,
 ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -52,6 +53,9 @@ def open_llm_evaluate(
         If True, write details about prompts and logits to json for all tasks
     :param output_base_path: str, optional
         Directory to which detailed eval info will be written. Defaults to present working dir.
+    :param num_fewshot: list[int], optional
+        List of number(s) of few-shot examples.
+        If not provided, we set to 0 for all tasks.
     :return
         Dictionary of results
     """
@@ -71,6 +75,14 @@ def open_llm_evaluate(
         lm = model
 
     task_dict = lm_eval.tasks.get_task_dict(tasks)
+    if num_fewshot is None:
+        num_fewshot = [0] * len(task_dict)
+
+    # Make a dictionary of task names and number of few-shot examples
+    num_fewshot_dict = {
+        task_name: num_fewshot[i] for i, (task_name, _) in enumerate(task_dict.items())
+    }
+    print(f"Tasks and fewshot setting: {num_fewshot_dict}")
 
     if check_integrity:
         print('| Check integrity of tasks')
@@ -85,10 +97,14 @@ def open_llm_evaluate(
         decontamination_ngrams_path=decontamination_ngrams_path,
         write_out=write_out,
         output_base_path=output_base_path,
+        num_fewshot_dict=num_fewshot_dict,
+
     )
 
     # add info about the model and few shot config
     results["config"] = {
+        "tasks": tasks,
+        "fewshot": num_fewshot,
         "model": model,
         "model_args": model_args,
         "batch_size": batch_size,
@@ -98,6 +114,8 @@ def open_llm_evaluate(
         "bootstrap_iters": bootstrap_iters,
         "description_dict": description_dict,
     }
+
+    print(results["config"])
 
     return results
 
@@ -115,6 +133,7 @@ def evaluate(
     decontamination_ngrams_path=None,
     write_out=False,
     output_base_path=None,
+    num_fewshot_dict=None,
 ):
     """Instantiate and evaluate a model on a list of tasks.
 
@@ -132,17 +151,17 @@ def evaluate(
         If True, write all prompts, logits and metrics to json for offline analysis
     :param output_base_path: str, optional
         Directory to which detailed eval info will be written. Defaults to present working dir
+    :param num_fewshot_dict: dict[str, int], optional
+        Dictionary of task names and number of few-shot examples to use for each task.
+        If not provided, the default number of few-shot examples for each task will be used.
     :return
         Dictionary of results
     """
-    # TODO: completely refactor this entire function to not be a huge mess, ideally breaking it down into smaller pieces
-
-    # TODO: todo: implement proper description-providing system
 
     decontaminate = decontamination_ngrams_path is not None
 
     task_dict_items = [
-        (name, task, task.NUM_FEW_SHOT)
+        (name, task, num_fewshot_dict.get(name, task.NUM_FEW_SHOT) if num_fewshot_dict else task.NUM_FEW_SHOT)
         for name, task in task_dict.items()
         if (task.has_validation_docs() or task.has_test_docs())
     ]
