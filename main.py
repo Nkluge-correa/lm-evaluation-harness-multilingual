@@ -47,7 +47,8 @@ def parse_args():
     parser.add_argument("--model_args", default="")
     parser.add_argument("--tasks", default='arc_vi,mmlu_vi,hellaswag_vi,truthfulqa_vi')
     parser.add_argument("--provide_description", action="store_true")
-    parser.add_argument("--num_fewshot", type=int, default=0)
+    parser.add_argument("--num_fewshot", type=int, nargs='+', default=[0],
+                    help="Number(s) of few-shot examples. Can be a single int or a list.")
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--device", type=str, default='cuda')
     parser.add_argument("--output_path", default=None)
@@ -88,6 +89,8 @@ def main():
             "WARNING: --limit SHOULD ONLY BE USED FOR TESTING. REAL METRICS SHOULD NOT BE COMPUTED USING LIMIT."
         )
     task_names = args.tasks.split(',')
+    assert len(task_names) == len(args.num_fewshot), \
+        f"Number of tasks ({len(task_names)}) must match number of few-shot examples ({len(args.num_fewshot)})"
     task_names = pattern_match(task_names, tasks.ALL_TASKS)
 
     output_filename = f'{args.task_alias}-{args.model_alias}.json'
